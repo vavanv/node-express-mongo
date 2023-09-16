@@ -1,6 +1,6 @@
 # environment
 .env.local
-.env.copy
+.env
 
 # dependencies
 /node_modules

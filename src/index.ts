@@ -7,8 +7,9 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 
 import router from './router';
+import { environment } from './environment';
 
-const MONGO_URL = '';
+const MONGO_URL = environment.mongoDb;
 
 mongoose.Promise = Promise;
 mongoose.connect(MONGO_URL);

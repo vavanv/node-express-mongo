@@ -1,0 +1,9 @@
+{
+  "resetMocks": true,
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.ts$": "ts-jest"
+  },
+  "testResultsProcessor": "jest-sonar-reporter",
+  "setupFiles": ["./setupJest.ts"]
+}
