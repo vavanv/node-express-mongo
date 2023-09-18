@@ -10,21 +10,23 @@ export const login = async (req: express.Request, res: express.Response) => {
 
     if (!email || !password) {
       res.status(400);
+      res.json({ error: 'Credentials are not provided' });
       return res.end();
     }
 
     const user = await getUserByEmail(email).select(
       '+authentication.salt +authentication.password',
     );
-
     if (!user) {
-      res.status(400);
+      res.status(401);
+      res.json({ error: 'User does not exist' });
       return res.end();
     }
 
     const expectedHash = authentication(user.authentication.salt, password);
     if (user.authentication.password !== expectedHash) {
       res.status(403);
+      res.json({ error: 'User does not have access' });
       return res.end();
     }
 
@@ -43,13 +45,15 @@ export const login = async (req: express.Request, res: express.Response) => {
   } catch (err) {
     console.error(err);
     res.status(400);
+    res.json(err.message);
     res.end();
   }
 };
 
 export const register = async (req: express.Request, res: express.Response) => {
   try {
-    const { email, password, username } = req.body;
+    const { username, email, password } = req.body;
+    // console.dir(req.body);
     if (!email || !password || !username) {
       res.status(400);
       res.json({ error: 'Credentials are not provided' });
@@ -71,6 +75,7 @@ export const register = async (req: express.Request, res: express.Response) => {
         password: authentication(salt, password),
       },
     });
+    // console.dir(user);
     res.status(200);
     res.json(user);
     return res.end();

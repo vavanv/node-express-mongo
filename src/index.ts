@@ -12,7 +12,7 @@ import { environment } from './environment';
 const MONGO_URL = environment.mongoDb;
 
 mongoose.Promise = Promise;
-mongoose.connect(MONGO_URL);
+mongoose.connect(MONGO_URL, { bufferCommands: true });
 mongoose.connection.on('connected', () => {
   console.log('Connected to MongoDB');
 });
