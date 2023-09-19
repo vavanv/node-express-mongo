@@ -41,7 +41,6 @@ export const login = async (req: express.Request, res: express.Response) => {
     res.status(200).json(user);
     res.end();
   } catch (err) {
-    console.error(err);
     res.status(500);
     res.json(err.message);
     res.end();
