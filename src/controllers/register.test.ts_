@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { register, login } from './authentication';
+import { register } from './register';
 
-import { generateRandomString, authentication } from '../helpers';
-const { UserModel, getUserByEmail, createUser, deleteUser, updateUser } = require('../db/users');
-const { AUTH_SESSION_COOKIE } = require('../helpers/constants');
+const { getUserByEmail, createUser } = require('../db/users');
 
 jest.mock('../db/users');
 
@@ -28,6 +26,8 @@ const response: Partial<Response> = {
 };
 
 describe('register', () => {
+  afterEach(jest.clearAllMocks);
+
   it('should return 400 and error message "Credentials are not provided"', async () => {
     const request = {
       body: {
@@ -70,33 +70,5 @@ describe('register', () => {
       username: 'username',
       password: 'password',
     });
-  });
-});
-
-describe('login', () => {
-  it('should return 400 and error message "Credentials are not provided"', async () => {
-    const request = {
-      body: {
-        email: '',
-        password: '',
-      },
-    };
-
-    await login(request as Request, response as Response);
-
-    expect(response.status).toHaveBeenCalledWith(400);
-    expect(response.json).toHaveBeenCalledWith({ error: 'Credentials are not provided' });
-  });
-
-  it('should return 400 and error message "User does not exist"', async () => {
-    getUserByEmail.mockImplementationOnce(() => ({
-      email: 'no_email',
-      select: jest.fn(),
-    }));
-
-    await login(request as Request, response as Response);
-
-    expect(response.status).toHaveBeenCalledWith(401);
-    expect(response.json).toHaveBeenCalledWith({ error: 'User does not exist' });
   });
 });

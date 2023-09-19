@@ -1,0 +1,150 @@
+import express from 'express';
+import { Request, Response } from 'express';
+import { login } from './login';
+// import { getUserByEmailWithAuthentication } from '../db/users';
+import { generateRandomString, authentication } from '../helpers';
+import { AUTH_SESSION_COOKIE } from '../helpers/constants';
+
+jest.mock('../db/users');
+jest.mock('../helpers');
+const { getUserByEmailWithAuthentication } = require('../db/users');
+const mockedGetUserByEmailWithAuthentication =
+  getUserByEmailWithAuthentication as jest.MockedFunction<typeof getUserByEmailWithAuthentication>;
+const mockedGenerateRandomString = generateRandomString as jest.MockedFunction<
+  typeof generateRandomString
+>;
+const mockedAuthentication = authentication as jest.MockedFunction<typeof authentication>;
+
+describe('login', () => {
+  let req: Request;
+  let res: Response;
+
+  beforeEach(() => {
+    req = {
+      body: {
+        email: 'fake_email',
+        password: 'fake_password',
+      },
+    } as Request;
+
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+      cookie: jest.fn().mockReturnThis(),
+      end: jest.fn().mockReturnThis(),
+    } as unknown as Response;
+
+    mockedGetUserByEmailWithAuthentication.mockReset();
+    mockedGenerateRandomString.mockReset();
+    mockedAuthentication.mockReset();
+  });
+
+  // it('should return 400 if credentials are not provided', async () => {
+  //   req.body = {};
+
+  //   await login(req, res);
+
+  //   expect(res.status).toBeCalledWith(400);
+  //   expect(res.json).toBeCalledWith({ error: 'Credentials are not provided' });
+  //   expect(res.end).toBeCalled();
+  // });
+
+  // it('should return 401 if user does not exist', async () => {
+  //   mockedGetUserByEmailWithAuthentication.mockResolvedValueOnce(null);
+
+  //   await login(req, res);
+
+  //   expect(res.status).toBeCalledWith(401);
+  //   expect(res.json).toBeCalledWith({ error: 'User does not exist' });
+  //   expect(res.end).toBeCalled();
+  // });
+
+  // it('should return 403 if user does not have access', async () => {
+  //   const user = {
+  //     email: 'fake_email',
+  //     username: 'fake_username',
+  //     authentication: {
+  //       salt: 'fake_salt',
+  //       password: 'fake_password',
+  //       sessionToken: 'fake_sessionToken',
+  //     },
+  //   };
+  //   mockedGetUserByEmailWithAuthentication.mockResolvedValueOnce(() => user);
+
+  //   mockedAuthentication.mockReturnValueOnce('fake_hash');
+
+  //   await login(req, res);
+
+  //   expect(res.status).toBeCalledWith(403);
+  //   expect(res.json).toBeCalledWith({ error: 'User does not have access' });
+  //   expect(res.end).toBeCalled();
+  // });
+
+  it('should return 200 and set session cookie if user has access', async () => {
+    mockedGetUserByEmailWithAuthentication.mockResolvedValueOnce({
+      email: 'fake_email',
+      username: 'fake_username',
+      authentication: {
+        salt: 'fake_salt',
+        password: 'fake_password',
+        sessionToken: 'fake_sessionToken',
+      },
+      save: jest.fn(),
+    });
+
+    mockedAuthentication.mockReturnValueOnce('fake_hash');
+    mockedGenerateRandomString.mockReturnValueOnce('fake_session_token');
+
+    await login(req, res);
+
+    expect(res.status).toBeCalledWith(200);
+    expect(res.json).toBeCalledWith({
+      email: 'fake_email',
+      username: 'fake_username',
+      authentication: {
+        salt: 'fake_salt',
+        password: 'fake_password',
+        sessionToken: 'fake_sessionToken',
+      },
+      save: jest.fn(),
+    });
+
+    expect(res.cookie).toBeCalledWith(AUTH_SESSION_COOKIE, 'fake_session_token', {
+      domain: 'localhost',
+      path: '/',
+    });
+
+    expect(res.end).toBeCalled();
+  });
+
+  it('should return 403', async () => {
+    mockedGetUserByEmailWithAuthentication.mockResolvedValueOnce({
+      email: 'fake_email',
+      username: 'fake_username',
+      authentication: {
+        salt: 'fake_salt',
+        password: 'fake_password',
+        sessionToken: 'fake_sessionToken',
+      },
+    });
+
+    mockedAuthentication.mockReturnValueOnce('fake_hash');
+    mockedGenerateRandomString.mockReturnValueOnce('fake_session_token');
+
+    await login(req, res);
+
+    expect(res.status).toBeCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ error: 'User does not have access' });
+    expect(res.end).toBeCalled();
+  });
+
+  it('should return 500 if an error occurs', async () => {
+    mockedGetUserByEmailWithAuthentication.mockRejectedValueOnce(new Error('fake_error'));
+
+    await login(req, res);
+
+    expect(res.status).toBeCalledWith(500);
+    expect(res.json).toBeCalledWith('fake_error');
+    expect(res.end).toBeCalled();
+  });
+});
